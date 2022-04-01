@@ -18,18 +18,32 @@ def add_to_flow_dict(flow_dict,flow_id,pkt):
 
 def flow_statistics(flow_dict):
     flow_stats = {}
+
     for idx in range(len(flow_dict)):
         total_len = 0
         total_pkt = 0
+        start_duration = 0
+        end_duration = 0
 
         for packet in flow_dict[idx]:
+            if total_pkt == 0:
+                start_duration = float(packet.sniff_timestamp)
+            elif total_pkt == len(flow_dict[idx])-1:
+                end_duration = float(packet.sniff_timestamp)
+
             total_len += int(packet.length)
             total_pkt += 1
 
         flow_stats[idx] = {}
-        flow_stats[idx]["avg_len"] = total_len / total_pkt
-        flow_stats[idx]["total_pkt"] = total_pkt
-        flow_stats[idx]["total_len"] = total_len
+        flow_stats[idx]["flow_duration"] = end_duration - start_duration
+        flow_stats[idx]["flow_rate"] = total_pkt/flow_stats[idx]["flow_duration"]
+        flow_stats[idx]["flow_volume"] = total_len
+        #print (flow_stats[idx])
+
+        #flow_stats[idx]["avg_pkt_len"] = total_len / total_pkt
+        #flow_stats[idx]["total_pkt"] = total_pkt
+        #flow_stats[idx]["total_len"] = total_len
+
 
     return (len(flow_stats))
 
@@ -55,7 +69,6 @@ print ("total packets ", total)
 print ("udp packets ", udp)
 print ("tcp packets ", tcp)
 
-# TODO: need to get for all flow statistics
 print ("UDP flow statistics ", flow_statistics(udp_flow_dict))
 print ("TCP flow statistics ", flow_statistics(tcp_flow_dict))
 
