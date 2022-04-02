@@ -81,4 +81,4 @@ print ("TCP flow statistics ", flow_statistics(tcp_flow_dict))
 #print (packet.eth.src)
 #print (packet.eth.dst)
 
-
+cap.close()
