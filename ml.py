@@ -52,6 +52,11 @@ knn = KNeighborsClassifier(n_neighbors=30)
 knn = Pipeline([('norm',StandardScaler()),('knn', knn)])
 knn.fit(x_train,y_train)
 pred_values = knn.predict(x_test)
+
+confusion_matrix(y_test,pred_values)
+#pd.crosstab(y_test, pred_values, rownames = ['Actual'], colnames =['Predicted'], margins = True)
+print(classification_report(y_test, pred_values))
+
 t4 = time.time()
 print("Prediction took " + str(t4-t3) + " seconds")
 print(pred_values)
