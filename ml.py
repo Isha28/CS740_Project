@@ -20,6 +20,8 @@ from sklearn.metrics import plot_roc_curve
 from sklearn.pipeline import Pipeline
 from sklearn import preprocessing
 from sklearn.preprocessing import StandardScaler
+from sklearn import svm
+from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 import matplotlib.pyplot as plt  
 import flow_stats
@@ -28,8 +30,10 @@ import time
 filename = "sample2.csv"
 df = pd.read_csv(filename)
 print(df)
+
 data = df.iloc[:,[1,2,3,4,6,7,8,9]]
 print(data)
+
 labels = df.iloc[:,[5]]
 print(labels)
 
@@ -48,12 +52,23 @@ for column_name in x_test.columns:
     else:
         pass
 
+#knn
 knn = KNeighborsClassifier(n_neighbors=30)
 knn = Pipeline([('norm',StandardScaler()),('knn', knn)])
 knn.fit(x_train,y_train)
 pred_values = knn.predict(x_test)
 
-confusion_matrix(y_test,pred_values)
+#svm
+#clf = svm.SVC(kernel='linear') # Linear Kernel
+#clf.fit(x_train, y_train)
+#pred_values = clf.predict(x_test)
+
+#random forest
+#clf=RandomForestClassifier(n_estimators=100)
+#clf.fit(x_train,y_train)
+#pred_values=clf.predict(x_test)
+
+#confusion_matrix(y_test,pred_values)
 #pd.crosstab(y_test, pred_values, rownames = ['Actual'], colnames =['Predicted'], margins = True)
 print(classification_report(y_test, pred_values))
 
