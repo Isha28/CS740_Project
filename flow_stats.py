@@ -15,7 +15,9 @@ def add_to_flow_dict(flow_dict,flow_id,pkt):
 def flow_statistics(filename):
     udp_flow_dict = {}
     tcp_flow_dict = {}
-
+    target_macs = []
+    with open("maclist.txt") as f:
+        target_macs = [line.rstrip().lower() for line in f]
     #Take count of packets
     total = 0
     udp = 0
@@ -76,8 +78,12 @@ def flow_statistics(filename):
                         domain = packet.mdns.dns_qry_name
                     if packet.sniff_timestamp.split('.')[0] not in dns_times:
                         dns_times.append(packet.sniff_timestamp.split('.')[0])
+
                 total_len += int(packet.length)
                 total_pkt += 1
+            if (packet.eth.dst.lower() not in target_macs):
+                # print(packet.eth.dst)
+                continue 
             flow_stats[id] = {}
             
             flow_stats[id]["source_port"] = packet[packet.transport_layer].srcport

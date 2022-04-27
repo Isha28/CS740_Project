@@ -31,10 +31,10 @@ filename = "sample2.csv"
 df = pd.read_csv(filename)
 print(df)
 
-data = df.iloc[:,[1,2,3,4,6,7,8,9]]
+data = df.iloc[:,[1,2,3,4,7,8,9]]
 print(data)
 
-labels = df.iloc[:,[5]]
+labels = df.iloc[:,[6]]
 print(labels)
 
 t3 = time.time()

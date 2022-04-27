@@ -1,9 +1,11 @@
+# coding=utf8
+
 import pandas as pd
 import numpy as np
 import flow_stats
 import time
 
-filename = "unsw.pcap"
+filename = "april_lab.pcap"
 t1 = time.time()
 df = pd.DataFrame.from_dict(flow_stats.flow_statistics(filename), orient='index')
 t2 = time.time()
