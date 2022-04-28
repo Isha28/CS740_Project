@@ -65,25 +65,24 @@ def flow_statistics(filename):
             for packet in packet_dict[idx]:
                 if total_pkt == 0:
                     start_duration = float(packet.sniff_timestamp)
-                    if id == "u10":
-                        print(start_duration)
                 elif total_pkt == len(packet_dict[idx])-1:
                     end_duration = float(packet.sniff_timestamp)
-                    if id == "u10":
-                        print(end_duration)
                 if packet.highest_layer == "DNS" or packet.highest_layer == "MDNS":
                     if packet.highest_layer == "DNS":
                         domain = packet.dns.qry_name
                     else:
-                        domain = packet.mdns.dns_qry_name
+                        if "dns_qry_name" in dir(packet.mdns):
+                            domain = packet.mdns.dns_qry_name
+                        else:
+                            domain = None
                     if packet.sniff_timestamp.split('.')[0] not in dns_times:
                         dns_times.append(packet.sniff_timestamp.split('.')[0])
 
                 total_len += int(packet.length)
                 total_pkt += 1
-            if (packet.eth.dst.lower() not in target_macs):
+            #if (packet.eth.dst.lower() not in target_macs):
                 # print(packet.eth.dst)
-                continue 
+            #    continue 
             flow_stats[id] = {}
             
             flow_stats[id]["source_port"] = packet[packet.transport_layer].srcport
@@ -105,6 +104,7 @@ def flow_statistics(filename):
             
             flow_stats[id]["flow_volume"] = total_len
             flow_stats[id]["domain"] = domain
+            print ("Added flow " , id)
     cap.close()
     return flow_stats
 
