@@ -42,6 +42,8 @@ def flow_statistics(filename):
             pass
     
     flow_stats = {}
+    mac_sleep_time = {}
+
     for flow_id in tcp_flow_dict:
         tcp_flow_dict[flow_id] = sorted(tcp_flow_dict[flow_id], key = lambda x:x.sniff_timestamp)
     for flow_id in udp_flow_dict:
@@ -84,9 +86,9 @@ def flow_statistics(filename):
 
                 total_len += int(packet.length)
                 total_pkt += 1
-            #if (packet.eth.dst.lower() not in target_macs):
+            if (packet.eth.dst.lower() not in target_macs and packet.eth.src.lower() not in target_macs):
                 # print(packet.eth.dst)
-            #    continue 
+                continue 
             flow_stats[id] = {}
             
             flow_stats[id]["source_port"] = packet[packet.transport_layer].srcport
@@ -99,6 +101,17 @@ def flow_statistics(filename):
                 flow_stats[id]["dest_ip"] = packet.ipv6.dst
             flow_stats[id]["source_mac"] = packet.eth.src
             flow_stats[id]["dest_mac"] = packet.eth.dst
+            
+            if packet.eth.src not in mac_sleep_time:
+                mac_sleep_time[packet.eth.src] = [float(packet.sniff_timestamp)]
+            else:
+                mac_sleep_time[packet.eth.src].append(float(packet.sniff_timestamp))
+
+            if packet.eth.dst not in mac_sleep_time:
+                mac_sleep_time[packet.eth.dst] = [float(packet.sniff_timestamp)]
+            else:
+                mac_sleep_time[packet.eth.dst].append(float(packet.sniff_timestamp))
+                
             if len(packet_dict[idx]) == 1:
                 flow_stats[id]["flow_duration"] = 0
                 flow_stats[id]["flow_rate"] = total_pkt
@@ -110,8 +123,37 @@ def flow_statistics(filename):
             flow_stats[id]["domain"] = domain
             print ("Added flow " , id)
     cap.close()
+    
+    mac_diff = {}
+
+    #sort timestamp list of each mac
+    for mac in mac_sleep_time:
+        mac_sleep_time[mac] = sorted(mac_sleep_time[mac])
+        
+    for mac in mac_sleep_time:
+        mac_diff[mac] = [sleep_time - mac_sleep_time[mac][i - 1] for i, sleep_time in enumerate(mac_sleep_time[mac])][1:]
+
+    mac_avg_sleep_time = {}
+    for mac in mac_diff:
+        if len(mac_diff[mac]) > 0:
+            mac_avg_sleep_time[mac] = sum(mac_diff[mac])/len(mac_diff[mac])
+        else:
+            mac_avg_sleep_time[mac] = 0
+
+#     mac_max_sleep_time = {}
+#     for mac in mac_diff:
+#         if len(mac_diff[mac]) > 0:
+#             mac_max_sleep_time[mac] = max(mac_diff[mac])
+#         else:
+#             mac_max_sleep_time[mac] = 0
+
+#     print (mac_sleep_time)
+#     print (mac_diff)
+    print (mac_avg_sleep_time)
+#     print (mac_max_sleep_time)
+
     return flow_stats
 
-# flow_stats = flow_statistics("sample2.pcap")
+flow_stats = flow_statistics("sample2.pcap")
 
 
