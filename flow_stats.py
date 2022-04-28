@@ -53,6 +53,10 @@ def flow_statistics(filename):
                 prefix = "t"
             else:
                 prefix = "u"
+            
+            if idx not in packet_dict:
+                continue
+
             id = prefix + str(idx)
             # print("Parsing new flow...")
             total_len = 0
