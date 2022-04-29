@@ -25,45 +25,61 @@ def generate_bag_of_words(filename):
         
         #print ("CSV header", csv_head)
 
-        keywords = {}
+        rem_ports_keywords = {}
+        domain_keywords = {}
+        
         for row in csv_rows:
             for idx in range(len(csv_head)):
                 if csv_head[idx] == "dest_mac" and row[idx] in device_map:
                     device_name = device_map[row[idx]]
-                    
-                    if device_name not in keywords:     
-                        keywords[device_name] = set()
-
-                    source_port = row[csv_head.index("source_port")]
-                    dest_port = row[csv_head.index("dest_port")]
+                    rem_port = row[csv_head.index("dest_port")]
                     domain = row[csv_head.index("domain")]
                     
-                    if source_port != "":
-                        keywords[device_name].add(source_port)
-
-                    if dest_port != "":
-                        keywords[device_name].add(dest_port)
-
+                    if rem_port != "":
+                        if device_name not in rem_ports_keywords:     
+                            rem_ports_keywords[device_name] = set()              
+                        rem_ports_keywords[device_name].add(rem_port)
+         
                     if domain != "": 
-                        keywords[device_name].add(domain)
+                        if device_name not in domain_keywords:     
+                            domain_keywords[device_name] = set()
+                        domain_keywords[device_name].add(domain)
 
         # print ('Bag of words', keywords)
-        wordset = []
-        for device in keywords:
-            wordset.extend(list(keywords[device]))
-        wordset = list(set(wordset))
-        # keywords = {key:list(value) for key, value in keywords.items()}
-        bag_of_words = {}
-        for device in keywords:
-            if device not in bag_of_words:
-                bag_of_words[device] = {}
-            for word in wordset:
-                if word not in keywords[device]:
-                    bag_of_words[device][word] = 0
+        rem_ports_wordset = []
+        for device in rem_ports_keywords:
+            rem_ports_wordset.extend(list(rem_ports_keywords[device]))
+        rem_ports_wordset = list(set(rem_ports_wordset))
+        
+        domain_wordset = []
+        for device in domain_keywords:
+            domain_wordset.extend(list(domain_keywords[device]))
+        domain_wordset = list(set(domain_wordset))
+        
+        rem_ports_bag_of_words = {}
+        for device in rem_ports_keywords:
+            if device not in rem_ports_bag_of_words:
+                rem_ports_bag_of_words[device] = {}
+            for word in rem_ports_wordset:
+                if word not in rem_ports_keywords[device]:
+                    rem_ports_bag_of_words[device][word] = 0
                 else:
-                    bag_of_words[device][word] = 1
-        bag_of_words_df = pd.DataFrame.from_dict(bag_of_words, orient='index')
-        return bag_of_words_df
+                    rem_ports_bag_of_words[device][word] = 1
+                    
+        domain_bag_of_words = {}
+        for device in domain_keywords:
+            if device not in domain_bag_of_words:
+                domain_bag_of_words[device] = {}
+            for word in domain_wordset:
+                if word not in domain_keywords[device]:
+                    domain_bag_of_words[device][word] = 0
+                else:
+                    domain_bag_of_words[device][word] = 1
+                    
+        rem_ports_bag_of_words_df = pd.DataFrame.from_dict(rem_ports_bag_of_words, orient='index')
+        domain_bag_of_words_df = pd.DataFrame.from_dict(domain_bag_of_words, orient='index')
+        
+        return (rem_ports_bag_of_words_df, domain_bag_of_words_df)
 
 def main():
     pass
