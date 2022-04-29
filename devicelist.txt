@@ -1,0 +1,8 @@
+1c:d6:Bd:b2:B8:87-SmartPlug
+28:6d:97:77:Cf:e8-SmartThings
+14:2e:5e:06:A5:F4-SamsungSmartCam
+B4:Fb:e3:Fb:bc:5d-AltoBeam
+A0:C9:A0:B5:02:9d-AndroidPhone
+70:3a:2d:24:77:Ea-VLink
+62:24:F3:88:Df:ee-SmartWatch
+C6:E2:0f:7b:80:70-IPhone
