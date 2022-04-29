@@ -29,10 +29,13 @@ import time
 import bagwords
 
 
-bag_of_words_df = bagwords.generate_bag_of_words("traces/output_sample.csv")
+bow_dfs = bagwords.generate_bag_of_words("traces/output_sample.csv")
 
-labels = pd.DataFrame(bag_of_words_df.index)
-data = bag_of_words_df
+remote_ports_df = bow_dfs[0]
+domains_df = bow_dfs[1]
+
+labels = pd.DataFrame(remote_ports_df.index)
+data = remote_ports_df
 
 x_train, x_test, y_train, y_test = train_test_split(data,labels, test_size=0.3, random_state=1 )
 
@@ -47,3 +50,19 @@ print(y_test[:15])
 print('Test Accuracy : %.3f'%multinomial_nb.score(x_test, y_test)) ## Score method also evaluates accuracy for classification models.
 print('Training Accuracy : %.3f'%multinomial_nb.score(x_train, y_train))
 
+
+labels = pd.DataFrame(domains_df.index)
+data = domains_df
+
+x_train, x_test, y_train, y_test = train_test_split(data,labels, test_size=0.2, random_state=1 )
+
+multinomial_nb =  MultinomialNB()
+multinomial_nb.fit(x_train, y_train)
+
+y_preds = multinomial_nb.predict(x_test)
+
+print(y_preds[:15])
+print(y_test[:15])
+
+print('Test Accuracy : %.3f'%multinomial_nb.score(x_test, y_test)) ## Score method also evaluates accuracy for classification models.
+print('Training Accuracy : %.3f'%multinomial_nb.score(x_train, y_train))
