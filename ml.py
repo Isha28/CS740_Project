@@ -9,9 +9,7 @@ import six
 import sys
 sys.modules['sklearn.externals.six'] = six
 from sklearn.externals.six import StringIO  
-from IPython.display import Image  
 from sklearn.tree import export_graphviz
-import pydotplus
 from sklearn.decomposition import PCA
 from sklearn.model_selection import KFold 
 from sklearn.metrics import accuracy_score
@@ -27,7 +25,7 @@ import matplotlib.pyplot as plt
 import flow_stats
 import time
 
-filename = "sample2.csv"
+filename = "traces/output_sample.csv"
 df = pd.read_csv(filename)
 print(df)
 
