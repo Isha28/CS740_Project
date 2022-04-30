@@ -154,6 +154,6 @@ def flow_statistics(filename):
 
     return flow_stats
 
-flow_stats = flow_statistics("sample2.pcap")
+#flow_stats = flow_statistics("sample2.pcap")
 
 
