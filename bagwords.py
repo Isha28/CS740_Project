@@ -61,9 +61,11 @@ def generate_bag_of_words(filename, attribute=None):
         
 #         print ("CSV header", csv_head)
 
+        all_flow_ids = list() 
         device_flow_id_map = {}
         for row in csv_rows:
             flow_id = row[0]
+            all_flow_ids.append(flow_id)
             dest_mac = row[csv_head.index("dest_mac")]
             src_mac = row[csv_head.index("source_mac")]
             if src_mac in device_map:
@@ -108,21 +110,21 @@ def generate_bag_of_words(filename, attribute=None):
         domain_wordset = list(set(domain_wordset))
         
         rem_ports_bag_of_words = {}
-        for flow_id in rem_ports_keywords:
+        for flow_id in all_flow_ids:
             if flow_id not in rem_ports_bag_of_words:
                 rem_ports_bag_of_words[flow_id] = {}
             for word in rem_ports_wordset:
-                if word not in rem_ports_keywords[flow_id]:
+                if flow_id not in rem_ports_keywords or word not in rem_ports_keywords[flow_id]:
                     rem_ports_bag_of_words[flow_id][word] = 0
                 else:
                     rem_ports_bag_of_words[flow_id][word] = 1
                     
         domain_bag_of_words = {}
-        for flow_id in domain_keywords:
+        for flow_id in all_flow_ids:
             if flow_id not in domain_bag_of_words:
                 domain_bag_of_words[flow_id] = {}
             for word in domain_wordset:
-                if word not in domain_keywords[flow_id]:
+                if flow_id not in domain_keywords or word not in domain_keywords[flow_id]:
                     domain_bag_of_words[flow_id][word] = 0
                 else:
                     domain_bag_of_words[flow_id][word] = 1
