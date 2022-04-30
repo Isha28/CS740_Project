@@ -105,12 +105,7 @@ def flow_statistics(filename):
             if packet.eth.src not in mac_sleep_time:
                 mac_sleep_time[packet.eth.src] = [float(packet.sniff_timestamp)]
             else:
-                mac_sleep_time[packet.eth.src].append(float(packet.sniff_timestamp))
-
-            if packet.eth.dst not in mac_sleep_time:
-                mac_sleep_time[packet.eth.dst] = [float(packet.sniff_timestamp)]
-            else:
-                mac_sleep_time[packet.eth.dst].append(float(packet.sniff_timestamp))
+                mac_sleep_time[packet.eth.src].append(float(packet.sniff_timestamp))       
                 
             if len(packet_dict[idx]) == 1:
                 flow_stats[id]["flow_duration"] = 0
@@ -152,8 +147,13 @@ def flow_statistics(filename):
     print (mac_avg_sleep_time)
 #     print (mac_max_sleep_time)
 
+    for flow_id in flow_stats:
+        mac = flow_stats[flow_id]["source_mac"]
+        if mac in mac_avg_sleep_time:
+            flow_stats[flow_id]["sleep_time"] = mac_avg_sleep_time[mac]
+
     return flow_stats
 
-#flow_stats = flow_statistics("sample2.pcap")
-
+# flow_stats = flow_statistics("sample2.pcap")
+# print (flow_stats)
 
