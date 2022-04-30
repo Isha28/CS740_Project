@@ -34,6 +34,8 @@ def fill_domain(filename):
     df.to_csv(filename, index=False)
     
 def generate_bag_of_words(filename):
+    fill_domain("sample2.csv")
+
     with open("devicelist.txt") as f:
         target_macs = [line.rstrip().lower() for line in f]
         device_map = {}

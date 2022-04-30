@@ -31,8 +31,8 @@ import bagwords
 
 bow_dfs = bagwords.generate_bag_of_words("traces/output_sample.csv")
 
-remote_ports_df = bow_dfs[0]
-domains_df = bow_dfs[1]
+remote_ports_df = bow_dfs[1]
+domains_df = bow_dfs[2]
 
 labels = pd.DataFrame(remote_ports_df.index)
 data = remote_ports_df
