@@ -30,7 +30,7 @@ def fill_domain(filename):
             if str(df.loc[index, 'domain']) == "nan" or str(df.loc[index, 'domain'])[0].isalpha() == False:
                 df.loc[index, 'domain'] = dest_ip_domain[df.loc[index, 'dest_ip']]
                 #print(index, row['dest_ip'], row['domain'], df.loc[index, 'dest_ip'], df.loc[index, 'domain']) 
-    
+    print("Fill domain saves " + str(len(df)) + " rows")
     df.to_csv(filename, index=False)
     
 def bucketize_flows(device_flow_map):
@@ -41,7 +41,7 @@ def bucketize_flows(device_flow_map):
     return flow_dict
 
 
-def generate_bag_of_words(filename):
+def generate_bag_of_words(filename, attribute=None):
     fill_domain(filename)
 
     with open("devicelist.txt") as f:
@@ -55,6 +55,7 @@ def generate_bag_of_words(filename):
         # print ("Device mappings", device_map)
         
         csv_rows = process_csv(filename)
+        print("gen_bag_words reads " + str(len(csv_rows)) + " of data")
         csv_head = csv_rows[0]
         csv_data = csv_rows[1:]
         
@@ -64,9 +65,14 @@ def generate_bag_of_words(filename):
         for row in csv_rows:
             flow_id = row[0]
             dest_mac = row[csv_head.index("dest_mac")]
-            if dest_mac not in device_map:
+            src_mac = row[csv_head.index("source_mac")]
+            if src_mac in device_map:
+                device_name = device_map[src_mac]
+            elif dest_mac in device_map:
+                device_name = device_map[dest_mac]
+            else:
+                print("Device not found!")
                 continue
-            device_name = device_map[dest_mac]
             if device_name not in device_flow_id_map:
                 device_flow_id_map[device_name] = set()
             device_flow_id_map[device_name].add(flow_id)
@@ -125,8 +131,12 @@ def generate_bag_of_words(filename):
         rem_ports_bag_of_words_df.drop(rem_ports_bag_of_words_df.index[0],inplace=True)
         domain_bag_of_words_df = pd.DataFrame.from_dict(domain_bag_of_words, orient='index')
         domain_bag_of_words_df.drop(domain_bag_of_words_df.index[0],inplace=True)
-        
-        return (bucketize_flows(device_flow_id_map), rem_ports_bag_of_words_df, domain_bag_of_words_df)
+        if attribute == "ports":
+            return (bucketize_flows(device_flow_id_map), rem_ports_bag_of_words_df)
+        elif attribute == "domains":
+            return (bucketize_flows(device_flow_id_map), domain_bag_of_words_df)
+        else:
+            return (bucketize_flows(device_flow_id_map), rem_ports_bag_of_words_df, domain_bag_of_words_df)
 
 def main():
     #fill_domain("sample2.csv")
