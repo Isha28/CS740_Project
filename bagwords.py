@@ -33,8 +33,16 @@ def fill_domain(filename):
     
     df.to_csv(filename, index=False)
     
+def bucketize_flows(device_flow_map):
+    flow_dict = {}
+    for device in device_flow_map:
+        for flow_id in device_flow_map[device]:
+            flow_dict[flow_id] = device
+    return flow_dict
+
+
 def generate_bag_of_words(filename):
-    fill_domain("sample2.csv")
+    fill_domain(filename)
 
     with open("devicelist.txt") as f:
         target_macs = [line.rstrip().lower() for line in f]
@@ -114,9 +122,11 @@ def generate_bag_of_words(filename):
                     domain_bag_of_words[flow_id][word] = 1
                     
         rem_ports_bag_of_words_df = pd.DataFrame.from_dict(rem_ports_bag_of_words, orient='index')
+        rem_ports_bag_of_words_df.drop(rem_ports_bag_of_words_df.index[0],inplace=True)
         domain_bag_of_words_df = pd.DataFrame.from_dict(domain_bag_of_words, orient='index')
+        domain_bag_of_words_df.drop(domain_bag_of_words_df.index[0],inplace=True)
         
-        return (device_flow_id_map, rem_ports_bag_of_words_df, domain_bag_of_words_df)
+        return (bucketize_flows(device_flow_id_map), rem_ports_bag_of_words_df, domain_bag_of_words_df)
 
 def main():
     #fill_domain("sample2.csv")

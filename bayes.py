@@ -31,11 +31,20 @@ import bagwords
 
 bow_dfs = bagwords.generate_bag_of_words("traces/output_sample.csv")
 
+flow_id_device_map = bow_dfs[0]
 remote_ports_df = bow_dfs[1]
 domains_df = bow_dfs[2]
 
-labels = pd.DataFrame(remote_ports_df.index)
-data = remote_ports_df
+
+remote_ports_df["Class"] = remote_ports_df.index.map(flow_id_device_map)
+
+print(remote_ports_df)
+
+remote_ports_df.dropna(subset =["Class"],inplace=True)
+labels = remote_ports_df.loc[:,"Class"]
+data = remote_ports_df.loc[:,remote_ports_df.columns != "Class"]
+print(data)
+print(labels)
 
 x_train, x_test, y_train, y_test = train_test_split(data,labels, test_size=0.3, random_state=1 )
 
@@ -51,10 +60,17 @@ print('Test Accuracy : %.3f'%multinomial_nb.score(x_test, y_test)) ## Score meth
 print('Training Accuracy : %.3f'%multinomial_nb.score(x_train, y_train))
 
 
-labels = pd.DataFrame(domains_df.index)
-data = domains_df
+domains_df["Class"] = domains_df.index.map(flow_id_device_map)
 
-x_train, x_test, y_train, y_test = train_test_split(data,labels, test_size=0.2, random_state=1 )
+print(domains_df)
+
+domains_df.dropna(subset =["Class"],inplace=True)
+labels = domains_df.loc[:,"Class"]
+data = domains_df.loc[:,domains_df.columns != "Class"]
+print(data)
+print(labels)
+
+x_train, x_test, y_train, y_test = train_test_split(data,labels, test_size=0.3, random_state=1 )
 
 multinomial_nb =  MultinomialNB()
 multinomial_nb.fit(x_train, y_train)
