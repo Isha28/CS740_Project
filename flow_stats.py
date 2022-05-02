@@ -1,6 +1,8 @@
 from xml import dom
+from xml.dom.minidom import Attr
 import pyshark
 import pandas as pd
+import re
 
 #TODO: for live capture, use pyshark.LiveCapture
 
@@ -68,7 +70,15 @@ def flow_statistics(filename):
 
             dns_times = []
             domain = None
+            cipher_suites = None
             for packet in packet_dict[idx]:
+                try:
+                    if (packet.highest_layer == "TLS" and packet.tls.handshake.showname_value == "Client Hello"):
+                        ciphers = re.findall(r'Cipher Suite: (.*)',str(packet.tls))
+                        ciphers = [re.search(r'\((.*)\)', cipher).group(1) for cipher in ciphers]
+                        cipher_suites = '|'.join(ciphers)
+                except AttributeError as e:
+                    pass
                 if total_pkt == 0:
                     start_duration = float(packet.sniff_timestamp)
                 elif total_pkt == len(packet_dict[idx])-1:
@@ -90,7 +100,7 @@ def flow_statistics(filename):
                 # print(packet.eth.dst)
                 continue 
             flow_stats[id] = {}
-            
+            flow_stats[id]["cipher_suites"] = cipher_suites
             flow_stats[id]["source_port"] = packet[packet.transport_layer].srcport
             flow_stats[id]["dest_port"] = packet[packet.transport_layer].dstport
             try:

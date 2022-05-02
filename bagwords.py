@@ -81,64 +81,49 @@ def generate_bag_of_words(filename, attribute=None):
             
 #         print ("device_flow_id_map ", device_flow_id_map)
         
-        rem_ports_keywords = {}
-        domain_keywords = {}
+        keywords = {}
         
         for row in csv_rows:
-            flow_id = row[0]  
-            rem_port = row[csv_head.index("dest_port")]
-            domain = row[csv_head.index("domain")]
+            flow_id = row[0]
+            if (attribute == "ports"):
+                field_value = row[csv_head.index("dest_port")]
+            elif (attribute == "domains"):
+                field_value = row[csv_head.index("domain")]
+            elif (attribute == "cipher_suites"):
+                field_value = row[csv_head.index("cipher_suites")]
 
-            if rem_port != "":
-                if flow_id not in rem_ports_keywords:     
-                    rem_ports_keywords[flow_id] = set()              
-                rem_ports_keywords[flow_id].add(rem_port)
+            if (attribute == "ports" or attribute == "domains"):
+                if field_value != "":
+                    if flow_id not in keywords:     
+                        keywords[flow_id] = set()              
+                    keywords[flow_id].add(field_value)
+            elif (attribute == "cipher_suites"):
+                if field_value != "":
+                    if flow_id not in keywords:
+                        keywords[flow_id] = list()
+                    keywords[flow_id].extend(field_value.split('|'))
+            
 
-            if domain != "": 
-                if flow_id not in domain_keywords:     
-                    domain_keywords[flow_id] = set()
-                domain_keywords[flow_id].add(domain)
+        wordset = []
+        for flow_id in keywords:
+            wordset.extend(list(keywords[flow_id]))
+        wordset = list(set(wordset))
 
-        rem_ports_wordset = []
-        for flow_id in rem_ports_keywords:
-            rem_ports_wordset.extend(list(rem_ports_keywords[flow_id]))
-        rem_ports_wordset = list(set(rem_ports_wordset))
-        
-        domain_wordset = []
-        for flow_id in domain_keywords:
-            domain_wordset.extend(list(domain_keywords[flow_id]))
-        domain_wordset = list(set(domain_wordset))
-        
-        rem_ports_bag_of_words = {}
+
+        bag_of_words = {}
         for flow_id in all_flow_ids:
-            if flow_id not in rem_ports_bag_of_words:
-                rem_ports_bag_of_words[flow_id] = {}
-            for word in rem_ports_wordset:
-                if flow_id not in rem_ports_keywords or word not in rem_ports_keywords[flow_id]:
-                    rem_ports_bag_of_words[flow_id][word] = 0
+            if flow_id not in bag_of_words:
+                bag_of_words[flow_id] = {}
+            for word in wordset:
+                if flow_id not in keywords or word not in keywords[flow_id]:
+                    bag_of_words[flow_id][word] = 0
                 else:
-                    rem_ports_bag_of_words[flow_id][word] = 1
-                    
-        domain_bag_of_words = {}
-        for flow_id in all_flow_ids:
-            if flow_id not in domain_bag_of_words:
-                domain_bag_of_words[flow_id] = {}
-            for word in domain_wordset:
-                if flow_id not in domain_keywords or word not in domain_keywords[flow_id]:
-                    domain_bag_of_words[flow_id][word] = 0
-                else:
-                    domain_bag_of_words[flow_id][word] = 1
-                    
-        rem_ports_bag_of_words_df = pd.DataFrame.from_dict(rem_ports_bag_of_words, orient='index')
-        rem_ports_bag_of_words_df.drop(rem_ports_bag_of_words_df.index[0],inplace=True)
-        domain_bag_of_words_df = pd.DataFrame.from_dict(domain_bag_of_words, orient='index')
-        domain_bag_of_words_df.drop(domain_bag_of_words_df.index[0],inplace=True)
-        if attribute == "ports":
-            return (bucketize_flows(device_flow_id_map), rem_ports_bag_of_words_df)
-        elif attribute == "domains":
-            return (bucketize_flows(device_flow_id_map), domain_bag_of_words_df)
-        else:
-            return (bucketize_flows(device_flow_id_map), rem_ports_bag_of_words_df, domain_bag_of_words_df)
+                    bag_of_words[flow_id][word] = 1
+
+        bag_of_words_df = pd.DataFrame.from_dict(bag_of_words, orient='index')
+        bag_of_words_df.drop(bag_of_words_df.index[0],inplace=True)
+
+        return (bucketize_flows(device_flow_id_map), bag_of_words_df)
 
 def main():
     #fill_domain("sample2.csv")

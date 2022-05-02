@@ -72,18 +72,21 @@ def predict_bag_of_words(model_path, filename, attribute=None):
     new_data.to_csv(output_file)
 
 def predict_all(filename):
-    bow_dfs = bagwords.generate_bag_of_words(filename)
+    bow_dfs = bagwords.generate_bag_of_words(filename, attribute="cipher_suites")
 
     flow_id_device_map = bow_dfs[0]
-    remote_ports_df = bow_dfs[1]
-    domains_df = bow_dfs[2]
-    train_bag_of_words(remote_ports_df, "stage0_ports",flow_id_device_map)
-    train_bag_of_words(domains_df, "stage0_domains",flow_id_device_map)
-    predict_bag_of_words("stage0_ports.joblib",filename,attribute="ports")
-    predict_bag_of_words("stage0_domains.joblib",filename,attribute="domains")
+    cipher_suites_df = bow_dfs[1]
+    print(cipher_suites_df)
+    train_bag_of_words(cipher_suites_df, "stage0_cipher_suites",flow_id_device_map)
+    # remote_ports_df = bow_dfs[1]
+    # domains_df = bow_dfs[2]
+    # train_bag_of_words(remote_ports_df, "stage0_ports",flow_id_device_map)
+    # train_bag_of_words(domains_df, "stage0_domains",flow_id_device_map)
+    # predict_bag_of_words("stage0_ports.joblib",filename,attribute="ports")
+    # predict_bag_of_words("stage0_domains.joblib",filename,attribute="domains")
 
 if __name__ == '__main__':
-    predict_all("traces/output_sample.csv")
+    predict_all("sample2.csv")
 
 
 
