@@ -19,7 +19,7 @@ def fill_domain(filename):
         if domain != "" and domain[0].isalpha():
             dest_ip_domain[dest_ip] = domain
 
-    print ("dest ip - domain", dest_ip_domain)
+    # print ("dest ip - domain", dest_ip_domain)
     
     df = pd.read_csv(filename)
     #df = df.reset_index()  # make sure indexes pair with number of rows
@@ -32,6 +32,31 @@ def fill_domain(filename):
                 #print(index, row['dest_ip'], row['domain'], df.loc[index, 'dest_ip'], df.loc[index, 'domain']) 
     print("Fill domain saves " + str(len(df)) + " rows")
     df.to_csv(filename, index=False)
+
+def fill_ciphers(filename):
+    csv_rows = process_csv(filename)
+    csv_head = csv_rows[0]
+    csv_data = csv_rows[1:]
+    dest_ip_ciphers = {}
+    for row in csv_data:
+        dest_ip = row[csv_head.index("dest_ip")]
+        ciphers = row[csv_head.index("cipher_suites")]
+        if ciphers != "":
+            dest_ip_ciphers[dest_ip] = ciphers
+
+    # print ("dest ip - ciphers", dest_ip_ciphers)
+    
+    df = pd.read_csv(filename)
+    #df = df.reset_index()  # make sure indexes pair with number of rows
+    
+    #OPTIONAL : converted mdns to dns domain names too
+    for index, row in df.iterrows():   
+        if df.loc[index, 'dest_ip'] in dest_ip_ciphers:
+            if str(df.loc[index, 'cipher_suites']) == "nan":
+                df.loc[index, 'cipher_suites'] = dest_ip_ciphers[df.loc[index, 'dest_ip']]
+                #print(index, row['dest_ip'], row['domain'], df.loc[index, 'dest_ip'], df.loc[index, 'domain']) 
+    print("Fill ciphers saves " + str(len(df)) + " rows")
+    df.to_csv(filename, index=False)
     
 def bucketize_flows(device_flow_map):
     flow_dict = {}
@@ -41,9 +66,12 @@ def bucketize_flows(device_flow_map):
     return flow_dict
 
 
+def chunker(seq, size):
+    return (seq[pos:pos + size] for pos in range(0, len(seq), size))
+
 def generate_bag_of_words(filename, attribute=None):
     fill_domain(filename)
-
+    fill_ciphers(filename)
     with open("devicelist.txt") as f:
         target_macs = [line.rstrip().lower() for line in f]
         device_map = {}
@@ -60,7 +88,7 @@ def generate_bag_of_words(filename, attribute=None):
         csv_data = csv_rows[1:]
         
 #         print ("CSV header", csv_head)
-
+        keywords = {}
         all_flow_ids = list() 
         device_flow_id_map = {}
         for row in csv_rows:
@@ -78,13 +106,6 @@ def generate_bag_of_words(filename, attribute=None):
             if device_name not in device_flow_id_map:
                 device_flow_id_map[device_name] = set()
             device_flow_id_map[device_name].add(flow_id)
-            
-#         print ("device_flow_id_map ", device_flow_id_map)
-        
-        keywords = {}
-        
-        for row in csv_rows:
-            flow_id = row[0]
             if (attribute == "ports"):
                 field_value = row[csv_head.index("dest_port")]
             elif (attribute == "domains"):
@@ -102,15 +123,20 @@ def generate_bag_of_words(filename, attribute=None):
                     if flow_id not in keywords:
                         keywords[flow_id] = list()
                     keywords[flow_id].extend(field_value.split('|'))
-            
+        # print ("device_flow_id_map ", device_flow_id_map)
+        print("Keywords dictionary created")
+       
+        print(keywords)   
+          
 
         wordset = []
         for flow_id in keywords:
             wordset.extend(list(keywords[flow_id]))
         wordset = list(set(wordset))
-
-
+        print(str(len(wordset)) + " words present in the wordset")
+        print("Creating bag of words dictionary")
         bag_of_words = {}
+
         for flow_id in all_flow_ids:
             if flow_id not in bag_of_words:
                 bag_of_words[flow_id] = {}
@@ -119,11 +145,12 @@ def generate_bag_of_words(filename, attribute=None):
                     bag_of_words[flow_id][word] = 0
                 else:
                     bag_of_words[flow_id][word] = 1
-
+        print("Creating dataframe from dictionary")
         bag_of_words_df = pd.DataFrame.from_dict(bag_of_words, orient='index')
         bag_of_words_df.drop(bag_of_words_df.index[0],inplace=True)
-
+        print("Created bag of words dataframe. Returning")
         return (bucketize_flows(device_flow_id_map), bag_of_words_df)
+
 
 def main():
     #fill_domain("sample2.csv")

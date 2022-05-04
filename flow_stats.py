@@ -72,6 +72,8 @@ def flow_statistics(filename):
             domain = None
             cipher_suites = None
             for packet in packet_dict[idx]:
+                if (packet.eth.src.lower() not in target_macs and packet.eth.dst.lower() not in target_macs):
+                    continue
                 try:
                     if (packet.highest_layer == "TLS" and packet.tls.handshake.showname_value == "Client Hello"):
                         ciphers = re.findall(r'Cipher Suite: (.*)',str(packet.tls))
@@ -96,9 +98,8 @@ def flow_statistics(filename):
 
                 total_len += int(packet.length)
                 total_pkt += 1
-            if (packet.eth.dst.lower() not in target_macs and packet.eth.src.lower() not in target_macs):
-                # print(packet.eth.dst)
-                continue 
+            if (packet.eth.src.lower() not in target_macs and packet.eth.dst.lower() not in target_macs):
+                continue
             flow_stats[id] = {}
             flow_stats[id]["cipher_suites"] = cipher_suites
             flow_stats[id]["source_port"] = packet[packet.transport_layer].srcport

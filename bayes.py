@@ -32,16 +32,29 @@ import os
 
 
 def train_bag_of_words(df,model_path, flow_id_device_map):
+    print("Beginning training")
     df["Class"] = df.index.map(flow_id_device_map)
     df.dropna(subset =["Class"],inplace=True)
     labels = df.loc[:,"Class"]
+    print("Extracted Labels")
     data = df.loc[:,df.columns != "Class"]
-    x_train, x_test, y_train, y_test = train_test_split(data,labels, test_size=0.3, random_state=1 )
+    print("Extracted Data")
+    
+   
+    x_train, x_test, y_train, y_test = train_test_split(data,labels, test_size=0.3, random_state=1)
     multinomial_nb =  MultinomialNB()
     multinomial_nb.fit(x_train, y_train)
+    # print("Split the data into chunks")
+    # split_data = np.array_split(data,3)
+    # for single_data in split_data:
+    #     print("training on new chunk")
+    #     x_train, x_test, y_train, y_test = train_test_split(single_data,labels, test_size=0.25, random_state=1 )
+    #     multinomial_nb =  MultinomialNB()
+    #     multinomial_nb.partial_fit(x_train, y_train)
     joblib.dump(multinomial_nb, model_path + ".joblib")
     #Evaluation
     y_preds = multinomial_nb.predict(x_test)
+    print(y_preds)
     class_probabilities = multinomial_nb.predict_proba(x_test)
     # print(y_preds)
     # print([max(probabilities) for probabilities in class_probabilities])
@@ -72,21 +85,21 @@ def predict_bag_of_words(model_path, filename, attribute=None):
     new_data.to_csv(output_file)
 
 def predict_all(filename):
-    bow_dfs = bagwords.generate_bag_of_words(filename, attribute="cipher_suites")
+    bow_dfs = bagwords.generate_bag_of_words(filename, attribute="ports")
 
     flow_id_device_map = bow_dfs[0]
-    cipher_suites_df = bow_dfs[1]
-    print(cipher_suites_df)
-    train_bag_of_words(cipher_suites_df, "stage0_cipher_suites",flow_id_device_map)
-    # remote_ports_df = bow_dfs[1]
-    # domains_df = bow_dfs[2]
-    # train_bag_of_words(remote_ports_df, "stage0_ports",flow_id_device_map)
+    # cipher_suites_df = bow_dfs[1]
+    # print(cipher_suites_df)
+    # train_bag_of_words(cipher_suites_df, "stage0_cipher_suites",flow_id_device_map)
+    remote_ports_df = bow_dfs[1]
+    # domains_df = bow_dfs[1]
+    train_bag_of_words(remote_ports_df, "stage0_ports",flow_id_device_map)
     # train_bag_of_words(domains_df, "stage0_domains",flow_id_device_map)
     # predict_bag_of_words("stage0_ports.joblib",filename,attribute="ports")
     # predict_bag_of_words("stage0_domains.joblib",filename,attribute="domains")
 
 if __name__ == '__main__':
-    predict_all("sample2.csv")
+    predict_all("merged_traces_unsw_filtered.csv")
 
 
 
