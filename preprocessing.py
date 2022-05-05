@@ -49,12 +49,16 @@ def merge_files(dirname, output_path):
 
 def split_data_by_hour(filename):
     df = pd.read_csv(filename)
+    df = df.sort_values(by="start_time")
+    # print(df)
     begin_time = df.iloc[0]["start_time"]
     end_time = df.iloc[-1]["end_time"]
     num_hours = math.ceil((end_time - begin_time)/3600)
+    # print(num_hours)
     all_dfs = []
     for idx in range(num_hours):
         new_df = df[(df["start_time"] >= begin_time + 3600*(idx)) & (df["start_time"] < begin_time + 3600*(idx+1))]
+        # print(new_df)
         all_dfs.append(new_df)
     for idx, single_df in enumerate(all_dfs):
         if single_df.empty:
@@ -91,11 +95,12 @@ def main():
     args = args_parser()
     if(args.dirname):
         dirname = args.dirname
-        merge_files(dirname, "merged_traces_unsw.csv")
+        merge_files(dirname, "merged_traces_unsw_2.csv")
     elif (args.filename):
         filename = args.filename
         filter_output(filename)
 
 if __name__ == "__main__":
-    # split_data_by_hour("traces/alltraces/16-09-23-0.csv")
-    merge_pcaps_by_hour("lab/lab4/","lab/merged/")
+    split_data_by_hour("merged_traces_unsw_2.csv")
+    # merge_pcaps_by_hour("lab/lab4/","lab/merged/")
+    # main()
