@@ -121,8 +121,12 @@ def flow_statistics(filename):
             if len(packet_dict[idx]) == 1:
                 flow_stats[id]["flow_duration"] = 0
                 flow_stats[id]["flow_rate"] = total_pkt
+                flow_stats[id]["start_time"] = start_duration
+                flow_stats[id]["end_time"] = end_duration
             else:
                 flow_stats[id]["flow_duration"] = end_duration - start_duration
+                flow_stats[id]["start_time"] = start_duration
+                flow_stats[id]["end_time"] = end_duration
                 flow_stats[id]["flow_rate"] = total_pkt/flow_stats[id]["flow_duration"]
             
             flow_stats[id]["flow_volume"] = total_len
