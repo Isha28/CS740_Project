@@ -7,6 +7,8 @@ import argparse
 import os
 import csv
 import math
+from subprocess import Popen
+
 
 def process_csv(filename):
     example_file = open(filename,encoding='utf-8')
@@ -47,19 +49,33 @@ def merge_files(dirname, output_path):
 
 def split_data_by_hour(filename):
     df = pd.read_csv(filename)
+    df = df[(df"start_time"] >= 1474552802) & (df["end_time"] >= 1474552802)]
+    df = df.sort_values(by="start_time")
+    # print(df)
     begin_time = df.iloc[0]["start_time"]
     end_time = df.iloc[-1]["end_time"]
     num_hours = math.ceil((end_time - begin_time)/3600)
+    # print(num_hours)
     all_dfs = []
     for idx in range(num_hours):
         new_df = df[(df["start_time"] >= begin_time + 3600*(idx)) & (df["start_time"] < begin_time + 3600*(idx+1))]
+        # print(new_df)
         all_dfs.append(new_df)
     for idx, single_df in enumerate(all_dfs):
         if single_df.empty:
             continue
         single_df.to_csv("hourly_output/hour_" + str(idx) + ".csv")
 
-
+def merge_pcaps_by_hour(dirname,output_dir):
+    file_list = sorted(os.listdir(dirname))
+    file_list = [str(dirname + path) for path in file_list if path[-4:] == 'pcap']
+    for idx, path in enumerate(file_list):
+        if (idx % 4 == 0):
+            process = Popen(['mergecap', '-w', output_dir+ "/merged_4_" + str(idx), file_list[idx], file_list[idx+1], file_list[idx+2] \
+                ,file_list[idx+3]], shell=False, close_fds=True)
+            stdout, stderr = process.communicate()
+        
+        
 
 def filter_output(filename):
     with open("maclist.txt") as f:
@@ -80,10 +96,12 @@ def main():
     args = args_parser()
     if(args.dirname):
         dirname = args.dirname
-        merge_files(dirname, "merged_traces_unsw.csv")
+        merge_files(dirname, "merged_traces_unsw_2.csv")
     elif (args.filename):
         filename = args.filename
         filter_output(filename)
 
 if __name__ == "__main__":
-    split_data_by_hour("traces/alltraces/16-09-23-0.csv")
+    split_data_by_hour("merged_traces_unsw_2.csv")
+    # merge_pcaps_by_hour("lab/lab4/","lab/merged/")
+    # main()
