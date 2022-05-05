@@ -7,6 +7,8 @@ import argparse
 import os
 import csv
 import math
+from subprocess import Popen
+
 
 def process_csv(filename):
     example_file = open(filename,encoding='utf-8')
@@ -59,7 +61,16 @@ def split_data_by_hour(filename):
             continue
         single_df.to_csv("hourly_output/hour_" + str(idx) + ".csv")
 
-
+def merge_pcaps_by_hour(dirname,output_dir):
+    file_list = sorted(os.listdir(dirname))
+    file_list = [str(dirname + path) for path in file_list if path[-4:] == 'pcap']
+    for idx, path in enumerate(file_list):
+        if (idx % 4 == 0):
+            process = Popen(['mergecap', '-w', output_dir+ "/merged_4_" + str(idx), file_list[idx], file_list[idx+1], file_list[idx+2] \
+                ,file_list[idx+3]], shell=False, close_fds=True)
+            stdout, stderr = process.communicate()
+        
+        
 
 def filter_output(filename):
     with open("maclist.txt") as f:
@@ -86,4 +97,5 @@ def main():
         filter_output(filename)
 
 if __name__ == "__main__":
-    split_data_by_hour("traces/alltraces/16-09-23-0.csv")
+    # split_data_by_hour("traces/alltraces/16-09-23-0.csv")
+    merge_pcaps_by_hour("lab/lab4/","lab/merged/")
