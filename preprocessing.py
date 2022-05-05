@@ -49,6 +49,7 @@ def merge_files(dirname, output_path):
 
 def split_data_by_hour(filename):
     df = pd.read_csv(filename)
+    df = df[(df"start_time"] >= 1474552802) & (df["end_time"] >= 1474552802)]
     df = df.sort_values(by="start_time")
     # print(df)
     begin_time = df.iloc[0]["start_time"]
