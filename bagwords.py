@@ -69,90 +69,201 @@ def bucketize_flows(device_flow_map):
 def chunker(seq, size):
     return (seq[pos:pos + size] for pos in range(0, len(seq), size))
 
+def generate_hourly_bag_of_words(filename,attribute=None):
+    fill_domain(filename)
+    fill_ciphers(filename)
+    with open("devicelist.txt") as f:
+        target_macs = [line.rstrip().lower() for line in f]
+    device_map = {}
+    for mac in target_macs:
+        device_mac = mac.split("-")[0]
+        device_name = mac.split("-")[1]
+        device_map[device_mac] = device_name
+    csv_rows = process_csv(filename)
+    print("gen_hourly_bag_words reads " + str(len(csv_rows)) + " of data")
+    csv_head = csv_rows[0]
+    csv_data = csv_rows[1:]
+
+    keywords = {}
+    all_flow_ids = list() 
+    all_src_macs = set()
+    device_flow_id_map = {}
+    for row in csv_rows:
+        flow_id = row[0]
+
+        all_flow_ids.append(flow_id)
+        dest_mac = row[csv_head.index("dest_mac")]
+        src_mac = row[csv_head.index("source_mac")]
+        all_src_macs.add(src_mac)
+        if src_mac in device_map:
+            device_name = device_map[src_mac]
+        elif dest_mac in device_map:
+            device_name = device_map[dest_mac]
+        else:
+            print("Device not found!")
+            continue
+        if device_name not in device_flow_id_map:
+            device_flow_id_map[device_name] = set()
+        device_flow_id_map[device_name].add(flow_id)
+        if (attribute == "ports"):
+            field_value = row[csv_head.index("dest_port")]
+        elif (attribute == "domains"):
+            field_value = row[csv_head.index("domain")]
+        elif (attribute == "cipher_suites"):
+            field_value = row[csv_head.index("cipher_suites")]
+
+        source_mac = src_mac
+
+        if (attribute == "ports" or attribute == "domains"):
+            if field_value != "":
+                if source_mac not in keywords:     
+                    keywords[source_mac] = {}
+                if field_value not in keywords[source_mac]:
+                    keywords[source_mac][field_value] = 0      
+                keywords[source_mac][field_value] += 1 
+        elif (attribute == "cipher_suites"):
+            if field_value != "":
+                if source_mac not in keywords:
+                    keywords[source_mac] = list()
+                keywords[source_mac].extend(field_value.split('|'))
+    # print ("device_flow_id_map ", device_flow_id_map)
+    print("Keywords dictionary created")
+       
+    print(keywords)   
+        
+
+    wordset = []
+    for source_mac in keywords:
+        wordset.extend(list(keywords[source_mac].keys()))
+    wordset = list(set(wordset))
+    print(str(len(wordset)) + " words present in the wordset")
+    print(wordset)
+    print("Creating bag of words dictionary")
+    hourly_bag_of_words = {}
+    for mac in all_src_macs:
+        if mac not in hourly_bag_of_words:
+            hourly_bag_of_words[mac] = {}
+        for word in wordset:
+            if mac not in keywords or word not in keywords[mac]:
+                hourly_bag_of_words[mac][word] = 0
+            else:
+                hourly_bag_of_words[mac][word] = keywords[mac][word]
+    print("Creating dataframe from dictionary")
+    hourly_bag_of_words_df = pd.DataFrame.from_dict(hourly_bag_of_words, orient="index")
+    hourly_bag_of_words_df = hourly_bag_of_words_df[hourly_bag_of_words_df.index != "source_mac"]
+    
+    hourly_bag_of_words_df.reset_index(inplace=True)
+   
+    hourly_bag_of_words_df = hourly_bag_of_words_df.rename(columns = {'index':'class'})
+    print(device_map)
+    hourly_bag_of_words_df["class"] = hourly_bag_of_words_df["class"].apply(lambda x: device_map[x])
+    
+    print(hourly_bag_of_words_df)
+    print("Created bag of words dataframe. Returning")
+
+    return (bucketize_flows(device_flow_id_map), hourly_bag_of_words_df)
+    
+    # for flow_id in all_flow_ids:
+    #     if flow_id not in bag_of_words:
+    #         bag_of_words[flow_id] = {}
+    #     for word in wordset:
+    #         if flow_id not in keywords or word not in keywords[flow_id]:
+    #             bag_of_words[flow_id][word] = 0
+    #         else:
+    #             bag_of_words[flow_id][word] = 1
+    # print("Creating dataframe from dictionary")
+    # bag_of_words_df = pd.DataFrame.from_dict(bag_of_words, orient='index')
+    # bag_of_words_df.drop(bag_of_words_df.index[0],inplace=True)
+    # print("Created bag of words dataframe. Returning")
+    # return (bucketize_flows(device_flow_id_map), bag_of_words_df)
+
+
+
 def generate_bag_of_words(filename, attribute=None):
     fill_domain(filename)
     fill_ciphers(filename)
     with open("devicelist.txt") as f:
         target_macs = [line.rstrip().lower() for line in f]
-        device_map = {}
-        for mac in target_macs:
-            device_mac = mac.split("-")[0]
-            device_name = mac.split("-")[1]
-            device_map[device_mac] = device_name
-        
+    device_map = {}
+    for mac in target_macs:
+        device_mac = mac.split("-")[0]
+        device_name = mac.split("-")[1]
+        device_map[device_mac] = device_name
+    
         # print ("Device mappings", device_map)
         
-        csv_rows = process_csv(filename)
-        print("gen_bag_words reads " + str(len(csv_rows)) + " of data")
-        csv_head = csv_rows[0]
-        csv_data = csv_rows[1:]
-        
+    csv_rows = process_csv(filename)
+    print("gen_bag_words reads " + str(len(csv_rows)) + " of data")
+    csv_head = csv_rows[0]
+    csv_data = csv_rows[1:]
+    
 #         print ("CSV header", csv_head)
-        keywords = {}
-        all_flow_ids = list() 
-        device_flow_id_map = {}
-        for row in csv_rows:
-            flow_id = row[0]
-            all_flow_ids.append(flow_id)
-            dest_mac = row[csv_head.index("dest_mac")]
-            src_mac = row[csv_head.index("source_mac")]
-            if src_mac in device_map:
-                device_name = device_map[src_mac]
-            elif dest_mac in device_map:
-                device_name = device_map[dest_mac]
-            else:
-                print("Device not found!")
-                continue
-            if device_name not in device_flow_id_map:
-                device_flow_id_map[device_name] = set()
-            device_flow_id_map[device_name].add(flow_id)
-            if (attribute == "ports"):
-                field_value = row[csv_head.index("dest_port")]
-            elif (attribute == "domains"):
-                field_value = row[csv_head.index("domain")]
-            elif (attribute == "cipher_suites"):
-                field_value = row[csv_head.index("cipher_suites")]
+    keywords = {}
+    all_flow_ids = list() 
+    device_flow_id_map = {}
+    for row in csv_rows:
+        flow_id = row[0]
+        all_flow_ids.append(flow_id)
+        dest_mac = row[csv_head.index("dest_mac")]
+        src_mac = row[csv_head.index("source_mac")]
+        if src_mac in device_map:
+            device_name = device_map[src_mac]
+        elif dest_mac in device_map:
+            device_name = device_map[dest_mac]
+        else:
+            print("Device not found!")
+            continue
+        if device_name not in device_flow_id_map:
+            device_flow_id_map[device_name] = set()
+        device_flow_id_map[device_name].add(flow_id)
+        if (attribute == "ports"):
+            field_value = row[csv_head.index("dest_port")]
+        elif (attribute == "domains"):
+            field_value = row[csv_head.index("domain")]
+        elif (attribute == "cipher_suites"):
+            field_value = row[csv_head.index("cipher_suites")]
 
-            if (attribute == "ports" or attribute == "domains"):
-                if field_value != "":
-                    if flow_id not in keywords:     
-                        keywords[flow_id] = set()              
-                    keywords[flow_id].add(field_value)
-            elif (attribute == "cipher_suites"):
-                if field_value != "":
-                    if flow_id not in keywords:
-                        keywords[flow_id] = list()
-                    keywords[flow_id].extend(field_value.split('|'))
-        # print ("device_flow_id_map ", device_flow_id_map)
-        print("Keywords dictionary created")
+        if (attribute == "ports" or attribute == "domains"):
+            if field_value != "":
+                if flow_id not in keywords:     
+                    keywords[flow_id] = set()              
+                keywords[flow_id].add(field_value)
+        elif (attribute == "cipher_suites"):
+            if field_value != "":
+                if flow_id not in keywords:
+                    keywords[flow_id] = list()
+                keywords[flow_id].extend(field_value.split('|'))
+    # print ("device_flow_id_map ", device_flow_id_map)
+    print("Keywords dictionary created")
        
-        print(keywords)   
-          
+    print(keywords)   
+        
 
-        wordset = []
-        for flow_id in keywords:
-            wordset.extend(list(keywords[flow_id]))
-        wordset = list(set(wordset))
-        print(str(len(wordset)) + " words present in the wordset")
-        print("Creating bag of words dictionary")
-        bag_of_words = {}
+    wordset = []
+    for flow_id in keywords:
+        wordset.extend(list(keywords[flow_id]))
+    wordset = list(set(wordset))
+    print(str(len(wordset)) + " words present in the wordset")
+    print("Creating bag of words dictionary")
+    bag_of_words = {}
 
-        for flow_id in all_flow_ids:
-            if flow_id not in bag_of_words:
-                bag_of_words[flow_id] = {}
-            for word in wordset:
-                if flow_id not in keywords or word not in keywords[flow_id]:
-                    bag_of_words[flow_id][word] = 0
-                else:
-                    bag_of_words[flow_id][word] = 1
-        print("Creating dataframe from dictionary")
-        bag_of_words_df = pd.DataFrame.from_dict(bag_of_words, orient='index')
-        bag_of_words_df.drop(bag_of_words_df.index[0],inplace=True)
-        print("Created bag of words dataframe. Returning")
-        return (bucketize_flows(device_flow_id_map), bag_of_words_df)
+    for flow_id in all_flow_ids:
+        if flow_id not in bag_of_words:
+            bag_of_words[flow_id] = {}
+        for word in wordset:
+            if flow_id not in keywords or word not in keywords[flow_id]:
+                bag_of_words[flow_id][word] = 0
+            else:
+                bag_of_words[flow_id][word] = 1
+    print("Creating dataframe from dictionary")
+    bag_of_words_df = pd.DataFrame.from_dict(bag_of_words, orient='index')
+    bag_of_words_df.drop(bag_of_words_df.index[0],inplace=True)
+    print("Created bag of words dataframe. Returning")
+    return (bucketize_flows(device_flow_id_map), bag_of_words_df)
 
 
 def main():
+    generate_hourly_bag_of_words("traces/alltraces/16-09-23-0.csv",attribute="ports")
     #fill_domain("sample2.csv")
     #print(generate_bag_of_words("sample2.csv"))
     pass

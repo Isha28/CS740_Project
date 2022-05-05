@@ -6,6 +6,7 @@ import time
 import argparse
 import os
 import csv
+import math
 
 def process_csv(filename):
     example_file = open(filename,encoding='utf-8')
@@ -44,6 +45,22 @@ def merge_files(dirname, output_path):
     df.set_index(df.iloc[:, 0], inplace=True)
     df.to_csv(output_path,index=False)
 
+def split_data_by_hour(filename):
+    df = pd.read_csv(filename)
+    begin_time = df.iloc[0]["start_time"]
+    end_time = df.iloc[-1]["end_time"]
+    num_hours = math.ceil((end_time - begin_time)/3600)
+    all_dfs = []
+    for idx in range(num_hours):
+        new_df = df[(df["start_time"] >= begin_time + 3600*(idx)) & (df["start_time"] < begin_time + 3600*(idx+1))]
+        all_dfs.append(new_df)
+    for idx, single_df in enumerate(all_dfs):
+        if single_df.empty:
+            continue
+        single_df.to_csv("hourly_output/hour_" + str(idx) + ".csv")
+
+
+
 def filter_output(filename):
     with open("maclist.txt") as f:
         target_macs = [line.rstrip().lower() for line in f]
@@ -69,4 +86,4 @@ def main():
         filter_output(filename)
 
 if __name__ == "__main__":
-    main()
+    split_data_by_hour("traces/alltraces/16-09-23-0.csv")

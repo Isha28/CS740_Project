@@ -99,8 +99,7 @@ def predict_all(filename):
     # predict_bag_of_words("stage0_domains.joblib",filename,attribute="domains")
 
 if __name__ == '__main__':
-    predict_all("merged_traces_unsw_filtered.csv")
-
+    predict_all("merged_traces_unsw_filtered_subset.csv")
 
 
 
