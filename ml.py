@@ -29,14 +29,16 @@ filename = "traces/output_sample.csv"
 df = pd.read_csv(filename)
 print(df)
 
-data = df.iloc[:,[1,2,3,4,7,8,9]]
+data = df.loc[:,["flow_duration","flow_rate", "flow_volume", "sleep_time","ports_class","ports_confidence",\
+"domains_class","domains_confidence","cipher_suites_class","cipher_suites_confidence"]
+]]
 print(data)
 
-labels = df.iloc[:,[6]]
+labels = df.loc[:,["class"]]
 print(labels)
 
 t3 = time.time()
-x_train, x_test, y_train, y_test = train_test_split(data,labels, test_size=0.4, random_state=1 )
+x_train, x_test, y_train, y_test = train_test_split(data,labels, test_size=0.3, random_state=1 )
 
 le = preprocessing.LabelEncoder()
 for column_name in x_train.columns:
