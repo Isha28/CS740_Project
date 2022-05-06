@@ -52,7 +52,35 @@ def knn_classifier(x_train, y_train, x_test, y_test):
    
     return pred_values
 
-def random_forest_classifier(x_train, y_train, x_test, y_test):
+def random_forest_validation(X,Y,cvol=True,k=5):
+    models = []
+    acc_score = []
+    print("Types:")
+    print(type(X))
+    print(type(Y))
+    model = RandomForestClassifier(n_estimators=100)
+    if cvol: 
+        kf = KFold(n_splits=k, random_state=None)
+        for train_index , test_index in kf.split(X):
+            X_train , X_test = X.iloc[train_index,:],X.iloc[test_index,:]
+            y_train , y_test = Y.iloc[train_index] , Y.iloc[test_index]
+            model.fit(X_train,y_train)
+            pred_values = model.predict(X_test)
+            # pred_values = model.predict_proba(X_test)
+            # predicted = (pred_values [:,1] >= threshold).astype('int')
+            acc = accuracy_score(y_test , pred_values)
+            print("Training: %d", acc)
+            acc_score.append(acc)
+            models.append(model)
+    else:
+        model = RandomForestClassifier(n_estimators=10,max_depth=3)
+        model.fit(X,Y)
+        models.append(model)
+    
+    return models, acc_score
+
+
+def random_forest_classifier(x_train, y_train, x_test, y_test, cvol=True,k=5):
     clf=RandomForestClassifier(n_estimators=100)
     clf.fit(x_train,y_train)
     pred_values=clf.predict(x_test)
@@ -106,9 +134,8 @@ def main():
     df = pd.read_csv(filename)
     print(df)
 
-    data = df.loc[:,["flow_duration","flow_rate", "flow_volume", "sleep_time","dest_port",\
-    "domains_class","domains_confidence","cipher_suites_class","cipher_suites_confidence"]]
-    print(data)
+    data = df.loc[:,["flow_duration","flow_rate", "flow_volume", "sleep_time","dest_port",]]
+    # print(data)
     data.fillna(0,inplace=True)
     labels = df.loc[:,["Class"]]
     print("Labels ", labels)
@@ -127,10 +154,12 @@ def main():
             x_test[column_name] = le.fit_transform(x_test[column_name])
         else:
             pass
-
-    pred_values = knn_classifier(x_train, y_train, x_test, y_test)
-
-    print(pred_values)
+    # models, _ = random_forest_validation(x_train, y_train)
+    # pred_values = knn_classifier(x_train, y_train, x_test, y_test)
+    # pred_values = random_forest_classifier(x_train, y_train, x_test, y_test)
+    pred_values = svm_classifier(x_train, y_train, x_test, y_test)
+    
+    # print(pred_values)
     t4 = time.time()
     print("Prediction took " + str(t4-t3) + " seconds")
 
