@@ -24,7 +24,7 @@ import numpy as np
 import matplotlib.pyplot as plt  
 import flow_stats
 import time
-
+import joblib
 
 
 
@@ -34,6 +34,9 @@ def knn_classifier(x_train, y_train, x_test, y_test):
     knn.fit(x_train,y_train)
     pred_values = knn.predict(x_test)
     print(pred_values)
+    joblib.dump(knn, "knn_stage_1" + ".joblib")
+    #Evaluation
+    class_probabilities = knn.predict_proba(x_test)
     pred_dict = {}
     for a in pred_values:
         if a not in pred_dict:
@@ -41,6 +44,11 @@ def knn_classifier(x_train, y_train, x_test, y_test):
         else:
             pred_dict[a] += 1
     print ("Occurence of each prediction", pred_dict)
+    print(confusion_matrix(y_test,pred_values))
+    # pd.crosstab(y_test, pred_values, rownames = ['Actual'], colnames =['Predicted'], margins = True)
+
+    print('Test Accuracy : %.3f'%knn.score(x_test, y_test)) ## Score method also evaluates accuracy for classification models.
+    print('Training Accuracy : %.3f'%knn.score(x_train, y_train))
     return pred_values
 
 def random_forest_classifier(x_train, y_train, x_test, y_test):
@@ -75,7 +83,7 @@ def main():
     df = pd.read_csv(filename)
     print(df)
 
-    data = df.loc[:,["flow_duration","flow_rate", "flow_volume", "sleep_time",\
+    data = df.loc[:,["flow_duration","flow_rate", "flow_volume", "sleep_time","dest_port",\
     "domains_class","domains_confidence","cipher_suites_class","cipher_suites_confidence"]]
     print(data)
     data.fillna(0,inplace=True)
