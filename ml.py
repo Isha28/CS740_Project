@@ -26,7 +26,7 @@ import flow_stats
 import time
 import joblib
 
-
+from sklearn.metrics import ConfusionMatrixDisplay
 
 def knn_classifier(x_train, y_train, x_test, y_test):
     knn = KNeighborsClassifier(n_neighbors=28)
@@ -37,44 +37,67 @@ def knn_classifier(x_train, y_train, x_test, y_test):
     joblib.dump(knn, "knn_stage_1" + ".joblib")
     #Evaluation
     class_probabilities = knn.predict_proba(x_test)
-    pred_dict = {}
-    for a in pred_values:
-        if a not in pred_dict:
-            pred_dict[a] = 1
-        else:
-            pred_dict[a] += 1
-    print ("Occurence of each prediction", pred_dict)
-    print(confusion_matrix(y_test,pred_values))
-    # pd.crosstab(y_test, pred_values, rownames = ['Actual'], colnames =['Predicted'], margins = True)
-
+    
     print('Test Accuracy : %.3f'%knn.score(x_test, y_test)) ## Score method also evaluates accuracy for classification models.
     print('Training Accuracy : %.3f'%knn.score(x_train, y_train))
+    
+    print (classification_report(y_test, pred_values))
+
+    class_names = knn.classes_ 
+    plt.rcParams.update({'font.size': 4})
+    cm = confusion_matrix(y_test,pred_values,labels=class_names)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
+    disp.plot(cmap=plt.cm.Blues, xticks_rotation=90)
+    plt.show()
+   
     return pred_values
 
 def random_forest_classifier(x_train, y_train, x_test, y_test):
     clf=RandomForestClassifier(n_estimators=100)
     clf.fit(x_train,y_train)
     pred_values=clf.predict(x_test)
-
-    confusion_matrix(y_test,pred_values)
-    pd.crosstab(y_test, pred_values, rownames = ['Actual'], colnames =['Predicted'], margins = True)
-    print(classification_report(y_test, pred_values))
     print(pred_values)
-    pred_dict = {}
-    for a in pred_values:
-        if a not in pred_dict:
-            pred_dict[a] = 1
-        else:
-            pred_dict[a] += 1
-    print ("Occurence of each prediction", pred_dict)
+    
+    joblib.dump(clf, "random_forest_stage_1" + ".joblib")
+    #Evaluation
+    class_probabilities = clf.predict_proba(x_test)
+    
+    print('Test Accuracy : %.3f'%clf.score(x_test, y_test))
+    print('Training Accuracy : %.3f'%clf.score(x_train, y_train))
+    
+    print (classification_report(y_test, pred_values))
+
+    class_names = clf.classes_ 
+    plt.rcParams.update({'font.size': 4})
+    cm = confusion_matrix(y_test,pred_values,labels=class_names)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
+    disp.plot(cmap=plt.cm.Blues, xticks_rotation=90)
+    plt.show()
+    
     return pred_values
 
 def svm_classifier(x_train, y_train, x_test, y_test):
-    #svm
     clf = svm.SVC(kernel='linear') # Linear Kernel
     clf.fit(x_train, y_train)
     pred_values = clf.predict(x_test)
     print(pred_values)
+    
+    joblib.dump(clf, "svm_stage_1" + ".joblib")
+    #Evaluation
+    class_probabilities = clf.predict_proba(x_test)
+    
+    print('Test Accuracy : %.3f'%clf.score(x_test, y_test))
+    print('Training Accuracy : %.3f'%clf.score(x_train, y_train))
+    
+    print (classification_report(y_test, pred_values))
+
+    class_names = clf.classes_ 
+    plt.rcParams.update({'font.size': 4})
+    cm = confusion_matrix(y_test,pred_values,labels=class_names)
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
+    disp.plot(cmap=plt.cm.Blues, xticks_rotation=90)
+    plt.show()
+    
     return pred_values
 
 
@@ -88,7 +111,7 @@ def main():
     print(data)
     data.fillna(0,inplace=True)
     labels = df.loc[:,["Class"]]
-    print(labels)
+    print("Labels ", labels)
 
     t3 = time.time()
     x_train, x_test, y_train, y_test = train_test_split(data,labels, test_size=0.3, random_state=1 )
