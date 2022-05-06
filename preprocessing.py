@@ -89,7 +89,7 @@ def filter_output(filename):
     df = df[df['source_mac'].isin(target_macs) | df["dest_mac"].isin(target_macs)]
     df.to_csv(filename.split('.')[0]+"_filtered.csv")
 
-def replace_mac_with_device_name(filename):
+def replace_mac_with_device_name(filename, column_name):
     df = pd.read_csv(filename)
     print(df)
     with open("devicelist.txt") as f:
@@ -102,10 +102,12 @@ def replace_mac_with_device_name(filename):
         device_map[device_mac] = device_name
     
     print ("Device mappings", device_map)
-    df = df[df["source_mac"].isin(device_map)]
-    df.rename(columns={"source_mac":"Class"},inplace=True)
+    df = df[df[column_name].isin(device_map)]
+    df.rename(columns={column_name:"Class"},inplace=True)
     df["Class"] = df["Class"].apply(lambda x: device_map[x])
     df.to_csv(filename.split('.')[0] + "_updated.csv")
+
+
 
 def generate_mapping_dict(bag_of_words_file):
     for idx in range(25):
@@ -129,7 +131,7 @@ def main():
     args = args_parser()
     if(args.dirname):
         dirname = args.dirname
-        merge_files(dirname, "merged_traces_lab2.csv")
+        merge_files(dirname, "merged_traces_lab_unsw.csv")
     elif (args.filename):
         filename = args.filename
         filter_output(filename)
@@ -138,5 +140,5 @@ if __name__ == "__main__":
     # split_data_by_hour("merged_traces_unsw_2.csv")
     # merge_pcaps_by_hour("lab/lab4/","lab/merged/")
     # main()
-    # replace_mac_with_device_name("merged_traces_unsw_2.csv")
-    generate_mapping_dict("merged_bag_of_words_ports2.csv")
+    replace_mac_with_device_name("merged_traces_lab_unsw.csv","dest_mac")
+    # generate_mapping_dict("merged_bag_of_words_ports2.csv")

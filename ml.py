@@ -104,15 +104,38 @@ def random_forest_classifier(x_train, y_train, x_test, y_test, cvol=True,k=5):
     
     return pred_values
 
+def predict_random_forest_classifiers(X_test,train_columns,test_columns,Y_test):
+    train_feature = train_columns.intersection(test_columns)
+    dummy_columns = train_columns.difference(test_columns)
+    X_test = X_test[train_feature]
+    X_test = X_test.reindex(X_test.columns.union(dummy_columns, sort=False), axis=1, fill_value=0)
+    X_test = X_test[train_columns]
+    print("Test feature vector length: ", len(test_columns))
+    print("Intersection: ", len(train_feature))
+    print("Dummy: ", len(dummy_columns))
+    # r = X_test.index[np.isnan(X_test).any(1)]
+    # print(r)
+    # print(len(X_test))
+    # # print(X_test.iloc[380])
+    model = joblib.load('random_forest_stage_1.joblib')
+    pred_values = model.predict(X_test)
+    acc = accuracy_score(Y_test , pred_values)
+    # threshold = 0.5
+    # pred_values = model.predict_proba(X_test)
+    # predicted = [model.classes_[np.where(p==max(p))][0] for p in pred_values]
+    # acc = accuracy_score(Y_test["Class"].tolist() , predicted)
+    print("Training: ", acc)
+    
+    # return predicted
+
 def svm_classifier(x_train, y_train, x_test, y_test):
-    clf = svm.SVC(kernel='linear') # Linear Kernel
+    clf = svm.SVC() # Linear Kernel
     clf.fit(x_train, y_train)
     pred_values = clf.predict(x_test)
     print(pred_values)
     
     joblib.dump(clf, "svm_stage_1" + ".joblib")
     #Evaluation
-    class_probabilities = clf.predict_proba(x_test)
     
     print('Test Accuracy : %.3f'%clf.score(x_test, y_test))
     print('Training Accuracy : %.3f'%clf.score(x_train, y_train))
@@ -130,16 +153,16 @@ def svm_classifier(x_train, y_train, x_test, y_test):
 
 
 def main():
-    filename = "merged_traces_unsw_2_updated_stage0.csv"
+    filename = "merged_traces_lab2_updated.csv"
     df = pd.read_csv(filename)
     print(df)
-
-    data = df.loc[:,["flow_duration","flow_rate", "flow_volume", "sleep_time","dest_port",]]
+    test_columns = {"flow_duration","flow_rate", "flow_volume", "sleep_time","dest_port"}
+    data = df.loc[:,list(test_columns)]
     # print(data)
     data.fillna(0,inplace=True)
     labels = df.loc[:,["Class"]]
     print("Labels ", labels)
-
+    # pred_values = predict_random_forest_classifiers(data, test_columns, test_columns, labels)
     t3 = time.time()
     x_train, x_test, y_train, y_test = train_test_split(data,labels, test_size=0.3, random_state=1 )
 
@@ -154,10 +177,12 @@ def main():
             x_test[column_name] = le.fit_transform(x_test[column_name])
         else:
             pass
+
+    pred_values = predict_random_forest_classifiers(data, test_columns, test_columns, labels)
     # models, _ = random_forest_validation(x_train, y_train)
     # pred_values = knn_classifier(x_train, y_train, x_test, y_test)
     # pred_values = random_forest_classifier(x_train, y_train, x_test, y_test)
-    pred_values = svm_classifier(x_train, y_train, x_test, y_test)
+    # pred_values = svm_classifier(x_train, y_train, x_test, y_test)
     
     # print(pred_values)
     t4 = time.time()
