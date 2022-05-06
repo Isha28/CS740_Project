@@ -1,5 +1,6 @@
 import pandas as pd
 import csv
+import os
 
 def process_csv(filename):
     example_file = open(filename, encoding="utf-8")
@@ -80,15 +81,17 @@ def generate_hourly_bag_of_words(filename,attribute=None):
         device_name = mac.split("-")[1]
         device_map[device_mac] = device_name
     csv_rows = process_csv(filename)
-    print("gen_hourly_bag_words reads " + str(len(csv_rows)) + " of data")
-    csv_head = csv_rows[0]
-    csv_data = csv_rows[1:]
-
+    # print("gen_hourly_bag_words reads " + str(len(csv_rows)) + " of data")
+    csv_head = csv_rows[0][1:]
+    csv_head[0] = "flow_id"
+    # print(csv_head)
+    csv_data = [row[1:] for row in csv_rows[1:]]
+    # print(csv_data[0])
     keywords = {}
     all_flow_ids = list() 
     all_src_macs = set()
     device_flow_id_map = {}
-    for row in csv_rows:
+    for row in csv_data:
         flow_id = row[0]
 
         all_flow_ids.append(flow_id)
@@ -100,7 +103,7 @@ def generate_hourly_bag_of_words(filename,attribute=None):
         elif dest_mac in device_map:
             device_name = device_map[dest_mac]
         else:
-            print("Device not found!")
+            # print("Device not found!")
             continue
         if device_name not in device_flow_id_map:
             device_flow_id_map[device_name] = set()
@@ -127,18 +130,22 @@ def generate_hourly_bag_of_words(filename,attribute=None):
                     keywords[source_mac] = list()
                 keywords[source_mac].extend(field_value.split('|'))
     # print ("device_flow_id_map ", device_flow_id_map)
-    print("Keywords dictionary created")
+    # print("Keywords dictionary created")
        
-    print(keywords)   
+    # print(keywords)   
         
 
     wordset = []
-    for source_mac in keywords:
-        wordset.extend(list(keywords[source_mac].keys()))
+    if attribute == "ports" or attribute == 'domains':
+        for source_mac in keywords:
+            wordset.extend(list(keywords[source_mac].keys()))
+    elif attribute == "cipher_suites":
+        for source_mac in keywords:
+            wordset.extend(list(keywords[source_mac]))
     wordset = list(set(wordset))
-    print(str(len(wordset)) + " words present in the wordset")
-    print(wordset)
-    print("Creating bag of words dictionary")
+    # print(str(len(wordset)) + " words present in the wordset")
+    # print(wordset)
+    # print("Creating bag of words dictionary")
     hourly_bag_of_words = {}
     for mac in all_src_macs:
         if mac not in hourly_bag_of_words:
@@ -148,20 +155,23 @@ def generate_hourly_bag_of_words(filename,attribute=None):
                 hourly_bag_of_words[mac][word] = 0
             else:
                 hourly_bag_of_words[mac][word] = keywords[mac][word]
-    print("Creating dataframe from dictionary")
+    # print("Creating dataframe from dictionary")
     hourly_bag_of_words_df = pd.DataFrame.from_dict(hourly_bag_of_words, orient="index")
     hourly_bag_of_words_df = hourly_bag_of_words_df[hourly_bag_of_words_df.index != "source_mac"]
     
     hourly_bag_of_words_df.reset_index(inplace=True)
    
     hourly_bag_of_words_df = hourly_bag_of_words_df.rename(columns = {'index':'class'})
-    print(device_map)
+    # print(device_map)
+    hourly_bag_of_words_df = hourly_bag_of_words_df[hourly_bag_of_words_df["class"].isin(device_map)]
     hourly_bag_of_words_df["class"] = hourly_bag_of_words_df["class"].apply(lambda x: device_map[x])
-    
-    print(hourly_bag_of_words_df)
-    print("Created bag of words dataframe. Returning")
+    # print(hourly_bag_of_words_df)
+    # print("Created bag of words dataframe. Returning")
+    device_flow_id_map = {device:list(flow_ids) for (device, flow_ids) in device_flow_id_map.items()}
+    # print(device_flow_id_map)
+    hourly_bag_of_words_df = hourly_bag_of_words_df.astype(str)
 
-    return (bucketize_flows(device_flow_id_map), hourly_bag_of_words_df)
+    return (device_flow_id_map, hourly_bag_of_words_df)
     
     # for flow_id in all_flow_ids:
     #     if flow_id not in bag_of_words:
@@ -180,8 +190,9 @@ def generate_hourly_bag_of_words(filename,attribute=None):
 
 
 def generate_bag_of_words(filename, attribute=None):
-    fill_domain(filename)
-    fill_ciphers(filename)
+    print("Bag words function begins")
+    # fill_domain(filename)
+    # fill_ciphers(filename)
     with open("devicelist.txt") as f:
         target_macs = [line.rstrip().lower() for line in f]
     device_map = {}
@@ -190,14 +201,14 @@ def generate_bag_of_words(filename, attribute=None):
         device_name = mac.split("-")[1]
         device_map[device_mac] = device_name
     
-        # print ("Device mappings", device_map)
+        print ("Device mappings", device_map)
         
     csv_rows = process_csv(filename)
     print("gen_bag_words reads " + str(len(csv_rows)) + " of data")
     csv_head = csv_rows[0]
     csv_data = csv_rows[1:]
     
-#         print ("CSV header", csv_head)
+    print ("CSV header", csv_head)
     keywords = {}
     all_flow_ids = list() 
     device_flow_id_map = {}
@@ -233,10 +244,10 @@ def generate_bag_of_words(filename, attribute=None):
                 if flow_id not in keywords:
                     keywords[flow_id] = list()
                 keywords[flow_id].extend(field_value.split('|'))
-    # print ("device_flow_id_map ", device_flow_id_map)
+    print ("device_flow_id_map ", device_flow_id_map)
     print("Keywords dictionary created")
        
-    print(keywords)   
+    print(keywords)
         
 
     wordset = []
@@ -259,11 +270,29 @@ def generate_bag_of_words(filename, attribute=None):
     bag_of_words_df = pd.DataFrame.from_dict(bag_of_words, orient='index')
     bag_of_words_df.drop(bag_of_words_df.index[0],inplace=True)
     print("Created bag of words dataframe. Returning")
+
+    bag_of_words_df = bag_of_words_df.astype(str)
+
     return (bucketize_flows(device_flow_id_map), bag_of_words_df)
+
+def merge_hourly_instances(dirname,attribute):
+    for idx, path in enumerate(os.listdir(dirname)):
+        if path[-3:] == 'csv':
+            if idx == 0:
+                mapping, merged_df = generate_hourly_bag_of_words(dirname + path,attribute=attribute)
+                merged_df["mapping"] = merged_df["class"].apply(lambda x: '|'.join(mapping[x]))
+            else:
+                mapping, new_df = generate_hourly_bag_of_words(dirname + path,attribute=attribute)
+                new_df["mapping"] = new_df["class"].apply(lambda x: '|'.join(mapping[x]))
+                merged_df = merged_df.append(new_df,ignore_index = True)
+    merged_df.to_csv("merged_bag_of_words_cipher_suites.csv",index=False)
+    print(merged_df)
+    return merged_df
 
 
 def main():
-    generate_hourly_bag_of_words("traces/alltraces/16-09-23-0.csv",attribute="ports")
+    merge_hourly_instances("hourly_output/","cipher_suites")
+    # generate_hourly_bag_of_words("hourly_output/hour_0.csv",attribute="ports")
     #fill_domain("sample2.csv")
     #print(generate_bag_of_words("sample2.csv"))
     pass

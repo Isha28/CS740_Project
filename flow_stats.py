@@ -50,7 +50,8 @@ def flow_statistics(filename):
         tcp_flow_dict[flow_id] = sorted(tcp_flow_dict[flow_id], key = lambda x:x.sniff_timestamp)
     for flow_id in udp_flow_dict:
         udp_flow_dict[flow_id] = sorted(udp_flow_dict[flow_id], key = lambda x:x.sniff_timestamp)
-
+    print(tcp_flow_dict)
+    print(udp_flow_dict)
     for packet_dict in [tcp_flow_dict,udp_flow_dict]:
         for idx in range(len(packet_dict)):
             if packet_dict == tcp_flow_dict:
@@ -72,8 +73,6 @@ def flow_statistics(filename):
             domain = None
             cipher_suites = None
             for packet in packet_dict[idx]:
-                if (packet.eth.src.lower() not in target_macs and packet.eth.dst.lower() not in target_macs):
-                    continue
                 try:
                     if (packet.highest_layer == "TLS" and packet.tls.handshake.showname_value == "Client Hello"):
                         ciphers = re.findall(r'Cipher Suite: (.*)',str(packet.tls))
@@ -84,6 +83,7 @@ def flow_statistics(filename):
                 if total_pkt == 0:
                     start_duration = float(packet.sniff_timestamp)
                 elif total_pkt == len(packet_dict[idx])-1:
+                    print("getting end duration")
                     end_duration = float(packet.sniff_timestamp)
                 if packet.highest_layer == "DNS" or packet.highest_layer == "MDNS":
                     if packet.highest_layer == "DNS":
@@ -120,14 +120,17 @@ def flow_statistics(filename):
                 
             if len(packet_dict[idx]) == 1:
                 flow_stats[id]["flow_duration"] = 0
-                flow_stats[id]["flow_rate"] = total_pkt
+                flow_stats[id]["flow_rate"] = total_len
                 flow_stats[id]["start_time"] = start_duration
                 flow_stats[id]["end_time"] = end_duration
             else:
+                if(end_duration == 0):
+                    print("zero end duration!")
+                    print(len(packet_dict[idx]))
                 flow_stats[id]["flow_duration"] = end_duration - start_duration
                 flow_stats[id]["start_time"] = start_duration
                 flow_stats[id]["end_time"] = end_duration
-                flow_stats[id]["flow_rate"] = total_pkt/flow_stats[id]["flow_duration"]
+                flow_stats[id]["flow_rate"] = total_len/flow_stats[id]["flow_duration"]
             
             flow_stats[id]["flow_volume"] = total_len
             flow_stats[id]["domain"] = domain

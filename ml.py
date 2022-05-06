@@ -25,38 +25,88 @@ import matplotlib.pyplot as plt
 import flow_stats
 import time
 
-filename = "traces/output_sample.csv"
-df = pd.read_csv(filename)
-print(df)
 
-data = df.loc[:,["flow_duration","flow_rate", "flow_volume", "sleep_time","ports_class","ports_confidence",\
-"domains_class","domains_confidence","cipher_suites_class","cipher_suites_confidence"]
-]]
-print(data)
 
-labels = df.loc[:,["class"]]
-print(labels)
 
-t3 = time.time()
-x_train, x_test, y_train, y_test = train_test_split(data,labels, test_size=0.3, random_state=1 )
+def knn_classifier(x_train, y_train, x_test, y_test):
+    knn = KNeighborsClassifier(n_neighbors=28)
+    knn = Pipeline([('norm',StandardScaler()),('knn', knn)])
+    knn.fit(x_train,y_train)
+    pred_values = knn.predict(x_test)
+    print(pred_values)
+    pred_dict = {}
+    for a in pred_values:
+        if a not in pred_dict:
+            pred_dict[a] = 1
+        else:
+            pred_dict[a] += 1
+    print ("Occurence of each prediction", pred_dict)
+    return pred_values
 
-le = preprocessing.LabelEncoder()
-for column_name in x_train.columns:
-    if x_train[column_name].dtype == object:
-        x_train[column_name] = le.fit_transform(x_train[column_name])
-    else:
-        pass
-for column_name in x_test.columns:
-    if x_test[column_name].dtype == object:
-        x_test[column_name] = le.fit_transform(x_test[column_name])
-    else:
-        pass
+def random_forest_classifier(x_train, y_train, x_test, y_test):
+    clf=RandomForestClassifier(n_estimators=100)
+    clf.fit(x_train,y_train)
+    pred_values=clf.predict(x_test)
 
-#knn
-knn = KNeighborsClassifier(n_neighbors=30)
-knn = Pipeline([('norm',StandardScaler()),('knn', knn)])
-knn.fit(x_train,y_train)
-pred_values = knn.predict(x_test)
+    confusion_matrix(y_test,pred_values)
+    pd.crosstab(y_test, pred_values, rownames = ['Actual'], colnames =['Predicted'], margins = True)
+    print(classification_report(y_test, pred_values))
+    print(pred_values)
+    pred_dict = {}
+    for a in pred_values:
+        if a not in pred_dict:
+            pred_dict[a] = 1
+        else:
+            pred_dict[a] += 1
+    print ("Occurence of each prediction", pred_dict)
+    return pred_values
+
+def svm_classifier(x_train, y_train, x_test, y_test):
+    #svm
+    clf = svm.SVC(kernel='linear') # Linear Kernel
+    clf.fit(x_train, y_train)
+    pred_values = clf.predict(x_test)
+    print(pred_values)
+    return pred_values
+
+
+def main():
+    filename = "merged_traces_unsw_2_updated_stage0.csv"
+    df = pd.read_csv(filename)
+    print(df)
+
+    data = df.loc[:,["flow_duration","flow_rate", "flow_volume", "sleep_time",\
+    "domains_class","domains_confidence","cipher_suites_class","cipher_suites_confidence"]]
+    print(data)
+    data.fillna(0,inplace=True)
+    labels = df.loc[:,["Class"]]
+    print(labels)
+
+    t3 = time.time()
+    x_train, x_test, y_train, y_test = train_test_split(data,labels, test_size=0.3, random_state=1 )
+
+    le = preprocessing.LabelEncoder()
+    for column_name in x_train.columns:
+        if x_train[column_name].dtype == object:
+            x_train[column_name] = le.fit_transform(x_train[column_name])
+        else:
+            pass
+    for column_name in x_test.columns:
+        if x_test[column_name].dtype == object:
+            x_test[column_name] = le.fit_transform(x_test[column_name])
+        else:
+            pass
+
+    pred_values = knn_classifier(x_train, y_train, x_test, y_test)
+
+    print(pred_values)
+    t4 = time.time()
+    print("Prediction took " + str(t4-t3) + " seconds")
+
+if __name__=="__main__":
+    main()
+
+
 
 #svm
 #clf = svm.SVC(kernel='linear') # Linear Kernel
@@ -70,15 +120,7 @@ pred_values = knn.predict(x_test)
 
 #confusion_matrix(y_test,pred_values)
 #pd.crosstab(y_test, pred_values, rownames = ['Actual'], colnames =['Predicted'], margins = True)
-print(classification_report(y_test, pred_values))
 
-t4 = time.time()
-print("Prediction took " + str(t4-t3) + " seconds")
-print(pred_values)
-pred_dict = {}
-for a in pred_values:
-    if a not in pred_dict:
-        pred_dict[a] = 1
-    else:
-        pred_dict[a] += 1
-print ("Occurence of each prediction", pred_dict)
+
+
+

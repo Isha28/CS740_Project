@@ -28,9 +28,9 @@ def process_file(filename):
 
 def process_dir(dirname):
     for path in os.listdir(dirname):
-        # if (path[-4:] == 'pcap'):
-        print(path)
-        process_file(dirname + path)
+        if (path[-4:] == 'pcap'):
+            print(path)
+            process_file(dirname + path)
 
 def main():
     args = args_parser()
@@ -40,5 +40,6 @@ def main():
     elif(args.dirname):
         dirname = args.dirname
         process_dir(dirname)
+        
 if __name__ == "__main__":
     main()
